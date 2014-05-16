@@ -1,20 +1,103 @@
 # Reproducible Research: Peer Assessment 1
+========================================================
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
 
 
 ## Loading and preprocessing the data
 
+```{r loadData, echo=TRUE }
+rm(list = ls()) #clear all variables
+data<-read.csv("activity.csv",sep=",",header=TRUE)
+
+```
 
 
 ## What is mean total number of steps taken per day?
 
 
+```{r computeMean, echo=TRUE}
+#compute the mean across all steps per day
+x<-tapply(data$steps[complete.cases(data$steps)], data$date[complete.cases(data)], mean,na.rm=TRUE)
+```
+
+
+**histogram of the total number of steps taken each day
+You can also embed plots, for example:!**
+
+
+```{r hist_steps_date, fig.width=7, fig.height=6}
+x<-x[complete.cases(x)]
+partx <- max(x)/4
+p<-as.integer(length(x)/10)
+me<-median(x)
+t<-paste("median ",me,sep="=")
+r<-hist(x,breaks=20,xlab="steps taken each day",xaxt="n",col="red")
+text(me, r$density[length(r$mids)/2], t, adj = c(.5, -.5), col = "white")
+abline(v=me,lwd=5,col="orange",lty="dashed")
+axis(1,at=c(1,partx,partx*2,partx*3,partx*4),labels=c(names(x[1]),names(x[p]),names(x[2*p]),names(x[3*p]),names(x[4*p])))
+```
+
+
+**Print average mean per day!**
+
+
+```{r echo=TRUE}
+write.table(x)
+```
+
 
 ## What is the average daily activity pattern?
 
+Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
 
+
+```{r daily_activity, fig.width=7, fig.height=6}
+data$date<-as.Date(data$date)
+data$weeks<-paste(weekdays(data$date))
+data$lowks<-paste(data$weeks=="Saturday"|data$weeks=="Sunday")
+wd<-subset(data,data$weeks!="Saturday" & data$weeks!="Sunday")
+we<-subset(data,data$weeks=="Saturday"|data$weeks=="Sunday")
+par(mfrow = c(2, 1))
+plot(wd$interval[complete.cases(data$steps)],wd$steps[complete.cases(data$steps)],type="l",xlab="Interval", ylab="Number of steps",col="lightblue", main="Weekdays")
+plot(we$interval[complete.cases(data$steps)],we$steps[complete.cases(data$steps)],type="l",xlab="Interval", ylab="Number of steps",col="lightblue", main="Weekends")
+```
 ## Imputing missing values
 
+**Calculate  the total number of missing values in the dataset (i.e. the total number of rows with NAs)!**
+
+```{r echo=TRUE}
+nas <-sum(is.na(data))
+print (paste("Total number of NA's is",nas,sep=" ---> "))
+
+```
 
 
-## Are there differences in activity patterns between weekdays and weekends?
+Strategy for filling in all of the missing values in the dataset. Strategy mean for that day, or the mediab for that 5-minute interval, etc.
+
+
+```{r echo=TRUE}
+#data$steps[is.na(data$steps)]<-x[data$date]
+data$steps[is.na(data$steps)]<-median(data$steps,na.rm=TRUE)
+```
+```{r hist_steps_date_missingFilled, fig.width=7, fig.height=6}
+par(mfrow = c(1, 1))
+#compute the mean across all steps per day
+x<-tapply(data$steps[complete.cases(data$steps)], data$date[complete.cases(data)], mean,na.rm=TRUE)
+r<-hist(x,breaks=20,xlab="steps taken each day",xaxt="n",col="red")
+me<-median(x)
+partx <- max(x)/4
+p<-as.integer(length(x)/10)
+t<-paste("median =",me,sep=" ")
+text(me, r$density[length(r$mids)/2], t, adj = c(.5, -.5), col = "white")
+abline(v=me,lwd=5,col="orange",lty="dashed")
+axis(1,at=c(1,partx,partx*2,partx*3,partx*4),labels=c(names(x[1]),names(x[p]),names(x[2*p]),names(x[3*p]),names(x[4*p])))
+```
+
+
+**Print average mean per day with missing values filled!**
+
+
+```{r echo=TRUE}
+write.table(x)
+```
